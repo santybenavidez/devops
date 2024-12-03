@@ -33,32 +33,25 @@ properties([
                 sandbox: false,
                 script: 
                 groovyScript: '''
-                import groovy.io.FileType
-
-                // Variable SELECCION provista por el usuario
+                    // Variable SELECCION provista por el usuario
                 if (SELECCION == "Seleccionar contenedor/es") {
-                    // Lista dinámica para almacenar los subdirectorios
+                    // Ruta al archivo directories.txt (en el workspace)
+                    def filePath = "/var/jenkins_home/workspace/directorios-aws/directories.txt"
                     def list = []
 
-                    // Establecer conexión SSH y ejecutar comando remoto
-                    def remoteOutput = sh(
-                        script: """
-                            sshagent (['EC2_SSH_CREDENTIAL_ID']) {
-                                ssh -o StrictHostKeyChecking=no ec2-user@ec2-54-227-67-59.compute-1.amazonaws.com\\
-                                "find /opt/unitech/composes -mindepth 1 -maxdepth 1 -type d -exec basename {} \\\\;"
-                            }
-                        """,
-                        returnStdout: true
-                    ).trim()
+                    // Leer el archivo línea por línea si existe
+                    def file = new File(filePath)
+                    if (file.exists()) {
+                        list = file.readLines()
+                    } else {
+                        println "El archivo directories.txt no existe en el directorio ${filePath}."
+                    }
 
-                    // Convertir la salida en una lista
-                    list = remoteOutput.split('\\n')
-                    
                     // Retornar la lista de subdirectorios
                     return list
                 }
                 return [] // Retornar lista vacía si no se selecciona opción válida
-            ''',
+                '''
             ]
         ]
     ]   
