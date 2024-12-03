@@ -32,20 +32,33 @@ properties([
                 classpath: [], 
                 sandbox: false,
                 script: 
-                '''
+                groovyScript: '''
                 import groovy.io.FileType
 
-                    // Only populate if 'Select Specific Files' is chosen
-                    if (SELECCION == "Seleccionar contenedor/es") {
-                        def list = []
-                        def dir = new File("C:\\\\Users\\\\matiash_unitech\\\\Desktop\\\\Nueva carpeta")
-                        dir.eachFileRecurse(FileType.FILES) { file ->
-                            list << file.name.take(file.name.lastIndexOf('.'))
-                        }
-                        return list
-                    }
-                    return [] // Empty list otherwise
-                '''
+                // Variable SELECCION provista por el usuario
+                if (SELECCION == "Seleccionar contenedor/es") {
+                    // Lista dinámica para almacenar los subdirectorios
+                    def list = []
+
+                    // Establecer conexión SSH y ejecutar comando remoto
+                    def remoteOutput = sh(
+                        script: """
+                            sshagent (['EC2_SSH_CREDENTIAL_ID']) {
+                                ssh -o StrictHostKeyChecking=no ec2-user@ec2-54-227-67-59.compute-1.amazonaws.com\\
+                                "find /opt/unitech/composes -mindepth 1 -maxdepth 1 -type d -exec basename {} \\\\;"
+                            }
+                        """,
+                        returnStdout: true
+                    ).trim()
+
+                    // Convertir la salida en una lista
+                    list = remoteOutput.split('\\n')
+                    
+                    // Retornar la lista de subdirectorios
+                    return list
+                }
+                return [] // Retornar lista vacía si no se selecciona opción válida
+            ''',
             ]
         ]
     ]   
@@ -65,8 +78,6 @@ pipeline {
                 def selectedChoices = params.CHOICE.split(',')
                 println "Selected choices: ${selectedChoices}"
                 echo params.FILE_SELECTION_TYPE
-
-
 
               }
          }
