@@ -1,27 +1,56 @@
 properties([
     parameters([
-        [$class: 'ChoiceParameter', 
-            choiceType: 'PT_RADIO',
-            description: 'Select a cluster',
-            filterLength: 1,
-            filterable: true,
-            multiSelectDelimiter: ',',
-            name: 'CLUSTER',
-            script: [$class: 'GroovyScript',
-                fallbackScript: [
-                    classpath: [], 
-                    sandbox: true, 
-                    script: 'return ["ERROR"]'
-                ],
-                script: [
-                    classpath: [], 
-                    sandbox: true, 
-                    script: 
-       "return['PROD','DEV', 'QA']"
-                ]
+    [$class: 'ChoiceParameter',
+        name: 'ACCION',
+        choiceType: 'PT_RADIO',
+        description: 'Seleccionar la acción a realizar',
+        script: 
+            [$class: 'GroovyScript', script: [classpath: [],
+            sandbox: false, script: "return ['Iniciar contenedor/es','Detener contenedor/es','Reiniciar contendedor/es','Recrear contenedor/es']"]
+            ]
+            ],
+    choice(
+            name: 'SELECCION',
+            choices: ['Todos', 'Seleccionar contenedor/es'],
+            description: 'What would you like to do?'
+        ), 
+    [$class: 'CascadeChoiceParameter', 
+        choiceType: 'PT_CHECKBOX', 
+        description: 'Seleccionar archivos', 
+        filterable: false, 
+        name: 'CHOICE', 
+        referencedParameters: 'SELECCION', 
+        script: [
+            $class: 'GroovyScript', 
+            fallbackScript: [
+                classpath: [], 
+                sandbox: false, 
+                script: 
+                    'return[\'Could not get version\']'
+            ], 
+            script: [
+                classpath: [], 
+                sandbox: false,
+                script: 
+                '''
+                import groovy.io.FileType
+
+                    // Only populate if 'Select Specific Files' is chosen
+                    if (SELECCION == "Seleccionar contenedor/es") {
+                        def list = []
+                        def dir = new File("C:\\\\Users\\\\matiash_unitech\\\\Desktop\\\\Nueva carpeta")
+                        dir.eachFileRecurse(FileType.FILES) { file ->
+                            list << file.name.take(file.name.lastIndexOf('.'))
+                        }
+                        return list
+                    }
+                    return [] // Empty list otherwise
+                '''
             ]
         ]
-    ])
+    ]   
+    ]),
+    pipelineTriggers([])
 ])
 
 pipeline {
@@ -33,12 +62,14 @@ pipeline {
          steps {
               script {
 
-                println CLUSTER
+                def selectedChoices = params.CHOICE.split(',')
+                println "Selected choices: ${selectedChoices}"
+                echo params.FILE_SELECTION_TYPE
+
 
 
               }
          }
       }
-
-   }
+}
 }
