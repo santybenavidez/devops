@@ -61,20 +61,18 @@ properties([
 ])
 
 pipeline {
-   agent any  
-   stages {
-
-      stage('Printing selected choice') {
-
-         steps {
-              script {
-
-                def selectedChoices = params.CHOICE.split(',')
-                println "Selected choices: ${selectedChoices}"
-                echo params.FILE_SELECTION_TYPE
-
-              }
-         }
-      }
-}
+    agent any
+    stages {
+        stage('Leer Archivo con Shell') {
+            steps {
+                script {
+                    def fileContent = sh(
+                        script: "cat /var/jenkins_home/workspace/directorios-aws/directories.txt",
+                        returnStdout: true
+                    ).trim()
+                    println "Contenido del archivo:\n${fileContent}"
+                }
+            }
+        }
+    }
 }
